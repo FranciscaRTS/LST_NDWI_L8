@@ -12,8 +12,8 @@ email=fa.ruiztaglest@gmail.com
 
 about=Este complemento calcula el índice NDWI con las imágenes del Landsat 8, las cuales pueden ser ingresadas sin la corrección atmosférica (radiancia y reflectancia (TOA)), ya que la aplicación puede corregirlas, de lo contrario solo se realizará el cálculo del índice. Los métodos utilizados para el cálculo son Xu, Gao y McFeeters.
 
-tracker=http://bugs
-repository=http://repo
+tracker=https://github.com/FranciscaRTS/LST_NDWI_L8/issues
+repository=https://github.com/FranciscaRTS/LST_NDWI_L8
 # End of mandatory metadata
 
 # Recommended items:
