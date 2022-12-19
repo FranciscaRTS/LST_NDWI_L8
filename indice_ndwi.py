@@ -21,44 +21,54 @@
  *                                                                         *
  ***************************************************************************/
 """
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtWidgets import QAction
+from PyQt5.QtWidgets import QFileDialog, QMainWindow,QMessageBox
 import os
-from PyQt5 import uic
-from PyQt5 import QtWidgets
-import sys 
-from PyQt5.QtCore import QSettings, QTranslator, QCoreApplication, QBasicTimer, QTimer
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QAction, QDialog, QApplication, QFileDialog
+from PyQt5.QtCore import QSettings, QTranslator, QCoreApplication
+from PyQt5.QtGui import QIcon, QFont
+from PyQt5.QtWidgets import QAction,QFileDialog, QDialog, QLabel
 from qgis.core import QgsRasterLayer
 from qgis.analysis import QgsRasterCalculator, QgsRasterCalculatorEntry
 from math import *
-from re import I
-import matplotlib.pyplot as plt
 import numpy as np
 from math import *
-from re import I
-import matplotlib.pyplot as plt
 import numpy as np
 import numpy as np
-from sys import argv, exit
 from math import sin, radians
 from qgis.core import QgsRasterLayer
 from qgis.analysis import QgsRasterCalculator, QgsRasterCalculatorEntry
 from osgeo import gdal 
-from qgis.core import QgsProject
 from shutil import rmtree
-from datetime import datetime
-
+from PyQt5 import uic
+import ctypes
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
 # Initialize Qt resources from file resources.py
 from .resources import *
 # Import the code for the dialog
 from .indice_ndwi_dialog import IndiceNDWIDialog
 import os.path
 
+class Instrucciones(QDialog):
+    def __init__(self):
+        QDialog.__init__(self)
+        
+        self.setMaximumSize(QtCore.QSize(1250,400))
+        self.setMinimumSize(QtCore.QSize(1250,400))
+        self.setWindowTitle("Instrucciones")
+        self.etiqueta = QLabel(self)
+        self.etiqueta.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.etiqueta.move(50,20)
+        self.etiqueta.setStyleSheet("border: 1px solid black; padding: 25px; font: 75 9pt 'Calibri';border-radius: 10px 10px 10px 10px;")
 
 class IndiceNDWI:
     """QGIS Plugin Implementation."""
 
     def __init__(self, iface):
+        self.dialogo = Instrucciones()
         self.archivo_MTL = []
         self.rutas_bandas = []
         self.rutas_bandas_corr = []
@@ -161,7 +171,7 @@ class IndiceNDWI:
             added to self.actions list.
         :rtype: QAction
         """
-        self.dlg = IndiceNDWIDialog()
+        self.dlg = IndiceNDWIDialog
         icon = QIcon(icon_path)
         action = QAction(icon, text, parent)
         action.triggered.connect(callback)
@@ -208,23 +218,31 @@ class IndiceNDWI:
                 action)
             self.iface.removeToolBarIcon(action)
 
+    def inst(self):
+        self.dialogo.etiqueta.setText("\tINSTRUCCIONES\n\n1. Asegurarse que las imágenes satelitales que usará sean exclusivamente de Landsat 8.\n2. Determinar si el proceso requiere corrección atmosférica:\n\nEn caso de requerir:\n\t- Dejar desmarcado la opción “Corrección realizada”.\n\t- Pulsar el icono de la opción “Seleccionar imágenes Landsat 8” y seleccionar todas las bandas satelitales de Landsat 8 (debe cerciorarse que estén las bandas 3, 5 y 6).\n\t- Pulsar el icono de la opción “Seleccionar archivo MTL” y escoger el archivo MTL (formato *.txt).\n\nEn caso de no requerir:\n\t- Marcar la opción “Corrección realizada”.\n\t- Pulsar el icono de la opción “Seleccionar imágenes corregidas Landsat 8” y seleccionar todas las bandas satelitales de Landsat 8 (debe cerciorarse que estén las bandas 3, 5 y 6).\n\n3. Pulsar el icono de la opción “Guardar NDWI”, escoger el directorio donde desea guardar y escribir el nombre de la carpeta que contendrá los resultados.\n4. Pulsar el botón “Ejecutar” (es normal que el proceso demore un par de segundos).")
+        
+        self.dialogo.exec_()
+
     def abrirTIF(self,rutas_bandas):
         
         archivo, _ = QFileDialog.getOpenFileNames(self.dlg, 'Abrir archivo', '', 'TIF file .TIF (*.TIF)')
         
         if archivo:
-                mensaje = self.dlg.cuadroTIF.setText(archivo[0])
-                self.dlg.btn_abrirTIF.setText(mensaje)
+            mensaje = self.dlg.cuadroTIF.setText(archivo[0])
+            self.dlg.btn_abrirTIF.setText(mensaje)
         for i in archivo:
             self.rutas_bandas.append(i)
         return rutas_bandas
-
+      
     def abrirMTL(self,archivo_MTL):
+       
         archivo, _ = QFileDialog.getOpenFileNames(self.dlg, 'Abrir archivo','', 'MTL file .txt (*.txt)')
+        
         if archivo:
             mensaje = self.dlg.cuadroMTL.setText(archivo[0])
             self.dlg.btn_abrirMTL.setText(mensaje)
-        self.archivo_MTL.append(archivo[0])
+        for i in archivo:
+            self.archivo_MTL.append(i)
         return archivo_MTL
 
     def estado(self):
@@ -240,7 +258,6 @@ class IndiceNDWI:
             self.dlg.msj_MTL.setEnabled(True)
             self.dlg.msj_CORR.setEnabled(False)
             
-
         if self.dlg.btn_correccion.isChecked()==True:
             self.estado_corr = "activo"
             self.dlg.cuadroTIF.setEnabled(False)
@@ -263,12 +280,13 @@ class IndiceNDWI:
         return rutas_bandas_corr
 
     def guardar(self, ruta_guardar):
+        
         archivo = QFileDialog.getSaveFileName(self.dlg,'Guardar archivo')
         if archivo:
             mensaje = self.dlg.cuadroGuardar.setText(archivo[0])
             self.dlg.btn_guardar.setText(mensaje)
         self.ruta_guardar.append(archivo[0])
-        #os.mkdir(self.ruta_guardar[0])
+        
         return ruta_guardar
 
     def ejecutar(self):
@@ -288,12 +306,23 @@ class IndiceNDWI:
             ruta_MTL = self.archivo_MTL[0]
             bandas = self.rutas_bandas
             self.filtro(ruta_MTL,bandas)
-            self.GUARDAR_NDWI(self.ruta_guardar[0] + '/correcciones/C_A_B3.TIF', self.ruta_guardar[0] + '/correcciones/C_A_B6.TIF', self.ruta_guardar[0] + '/correcciones/C_A_B5.TIF')
+            self.GUARDAR_NDWI(self.ruta_guardar[0] + '/correcciones/correccion_atmosferica_B3.TIF', self.ruta_guardar[0] + '/correcciones/correccion_atmosferica_B6.TIF', self.ruta_guardar[0] + '/correcciones/correccion_atmosferica_B5.TIF')
             rmtree(self.ruta_guardar[0] + '/correcciones')
             self.limpiar()
 
     def cerrar(self): 
+        self.limpiar()
         self.dlg.close()
+
+    def limpiar(self):
+        self.dlg.cuadroTIF.clear()
+        self.dlg.cuadroMTL.clear()
+        self.dlg.cuadroBandasCorregidas.clear()
+        self.dlg.cuadroGuardar.clear()
+        self.archivo_MTL.clear()
+        self.rutas_bandas.clear()
+        self.rutas_bandas_corr.clear()
+        self.ruta_guardar.clear()
 
     def guardar_raster(self,dataset,datasetPath,cols,rows,projection,geot):
         rasterSet = gdal.GetDriverByName('GTiff').Create(datasetPath, cols ,rows ,1,gdal.GDT_Float32)
@@ -319,8 +348,8 @@ class IndiceNDWI:
         projection = B.GetProjection()
         geot = B.GetGeoTransform()
 
-        self.guardar_raster(REFLECTANCIA, self.ruta_guardar[0] + f"/correcciones/C_A_B{n}.TIF",cols,rows,projection,geot)
-
+        self.guardar_raster(REFLECTANCIA, self.ruta_guardar[0] + f"/correcciones/correccion_atmosferica_B{n}.TIF",cols,rows,projection,geot)
+          
     def filtro(self,path,archivo):
         
         #BANDAS
@@ -399,7 +428,7 @@ class IndiceNDWI:
         self.correccion(5,banda_5,RADIANCE_MULT_BAND[2],RADIANCE_ADD_BAND[2],distancia_tierra_sol,cos_elevacion_solar,ESUN[2])
         self.correccion(6,banda_6,RADIANCE_MULT_BAND[3],RADIANCE_ADD_BAND[3],distancia_tierra_sol,cos_elevacion_solar,ESUN[3])
 
-    
+
     def NDWI (self, path_1, path_2, nombre_salida,banda_corr_1,banda_corr_2):
         dirB1 = path_1 
         dirB2 = path_2
@@ -420,8 +449,8 @@ class IndiceNDWI:
 
         calc = QgsRasterCalculator(f"('{banda_corr_1}'-'{banda_corr_2}')/('{banda_corr_1}'+'{banda_corr_2}')", salida, 'GTiff', banda_1.extent(), banda_1.width(), banda_1.height(), entradas)
         calc.processCalculation()
-
-    
+        
+        
     def GUARDAR_NDWI(self,directorio, directorio1, directorio2):
 
         self.NDWI(directorio, directorio1, "/NDWI_XU.TIF", 'green@1','swir@1')
@@ -432,16 +461,7 @@ class IndiceNDWI:
         self.iface.addRasterLayer(self.ruta_guardar[0] + '/NDWI_GAO.TIF', "NDWI_GAO")
         self.iface.addRasterLayer(self.ruta_guardar[0] + '/NDWI_MCFEETERS.TIF', "NDWI_MCFEETERS")
 
-    def limpiar(self):
-        self.dlg.cuadroTIF.clear()
-        self.dlg.cuadroMTL.clear()
-        self.dlg.cuadroBandasCorregidas.clear()
-        self.dlg.cuadroGuardar.clear()
-        self.archivo_MTL.clear()
-        self.rutas_bandas.clear()
-        self.rutas_bandas_corr.clear()
-        self.ruta_guardar.clear()
-
+  
 
     def run(self):
         """Run method that performs all the real work"""
@@ -462,7 +482,7 @@ class IndiceNDWI:
             self.dlg.cuadroBandasCorregidas.setEnabled(False)
             self.dlg.btn_abrirCORR.setEnabled(False)
             self.dlg.msj_CORR.setEnabled(False)
-
+            self.dlg.btn_inst.clicked.connect(self.inst)
 
         # show the dialog
         self.dlg.show()
