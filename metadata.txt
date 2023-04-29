@@ -6,8 +6,8 @@
 name=Moisture and Water Index
 qgisMinimumVersion=3.0
 description=Este complemento calcula el índice NDWI con las imágenes del Landsat 8.
-version=1.0
-author=Francisca Ruiz-Tagle Santander y Keyla Alencar da Silva - UTEM/UNR/CONICET
+version=1.5
+author=Francisca Ruiz-Tagle Santander y Keyla Alencar da Silva UTEM UNR CONICET
 email=fa.ruiztaglest@gmail.com
 
 about=Este complemento calcula el índice NDWI con las imágenes del Landsat 8, las cuales pueden ser ingresadas sin la corrección atmosférica (radiancia y reflectancia (TOA)), ya que la aplicación puede corregirlas, de lo contrario solo se realizará el cálculo del índice. Los métodos utilizados para el cálculo son Xu, Gao y McFeeters.
@@ -21,11 +21,21 @@ repository=https://github.com/FranciscaRTS/LST_NDWI_L8
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
 # changelog=
+1.5
+- Se crearon avisos para alertar a el usuario al ingresar erróneamente los datos de entrada (bandas satelitales y MTL).
+- Se crearon mensajes de avisos en QGIS para mantener actualizado al usuario sobre el proceso de la ejecución.
+- Se integro un sonido al terminar la ejecución.
+- Se bloqueo el botón “ejecutar” hasta que el usurario ingrese los datos correctamente y se genero una alerta que lo indica, la cual se elimina al verificar la información.
+- Se ajustó el ingreso de bandas y metadato, impidiendo el reingreso de la misma banda y otro MTL.
+- Se realizaron mejoras en la interfaz y se solucionaron bugs estéticos 
+
+1.0 
+- Cálculo de corrección atmosférica y NDWI de landsat 8.
 
 # Tags are comma separated with spaces allowed
 tags=python, NDWI, índice, raster, landsat8, radiancia, reflectancia, TOA  
 
-homepage=http://homepage
+homepage=https://github.com/FranciscaRTS/LST_NDWI_L8
 category=Plugins
 icon=icon.png
 # experimental flag

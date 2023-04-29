@@ -21,31 +21,20 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
-from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction
-from PyQt5.QtWidgets import QFileDialog, QMainWindow,QMessageBox
 import os
-from PyQt5.QtCore import QSettings, QTranslator, QCoreApplication
-from PyQt5.QtGui import QIcon, QFont
-from PyQt5.QtWidgets import QAction,QFileDialog, QDialog, QLabel
-from qgis.core import QgsRasterLayer
-from qgis.analysis import QgsRasterCalculator, QgsRasterCalculatorEntry
-from math import *
 import numpy as np
 from math import *
-import numpy as np
-import numpy as np
-from math import sin, radians
-from qgis.core import QgsRasterLayer
-from qgis.analysis import QgsRasterCalculator, QgsRasterCalculatorEntry
 from osgeo import gdal 
 from shutil import rmtree
-from PyQt5 import uic
-import ctypes
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+from qgis.PyQt.QtGui import QIcon
+from PyQt5.QtMultimedia import QSound
+from qgis.core import QgsRasterLayer, Qgis
+from qgis.PyQt.QtWidgets import QAction, QLabel
+from PyQt5.QtCore import QSettings, QTranslator, QCoreApplication
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
+from qgis.analysis import QgsRasterCalculator, QgsRasterCalculatorEntry
+from PyQt5.QtWidgets import QAction,QFileDialog, QDialog, QLabel, QMessageBox, QMenu, QSizePolicy
+
 # Initialize Qt resources from file resources.py
 from .resources import *
 # Import the code for the dialog
@@ -74,6 +63,7 @@ class IndiceNDWI:
         self.rutas_bandas_corr = []
         self.estado_corr = "inactivo"
         self.ruta_guardar = []
+        self.sound = QSound(os.path.dirname(__file__)+"/exito.wav")
 
         """Constructor.
 
@@ -218,35 +208,68 @@ class IndiceNDWI:
                 action)
             self.iface.removeToolBarIcon(action)
 
+
     def inst(self):
         self.dialogo.etiqueta.setText("\tINSTRUCCIONES\n\n1. Asegurarse que las imágenes satelitales que usará sean exclusivamente de Landsat 8.\n2. Determinar si el proceso requiere corrección atmosférica:\n\nEn caso de requerir:\n\t- Dejar desmarcado la opción “Corrección realizada”.\n\t- Pulsar el icono de la opción “Seleccionar imágenes Landsat 8” y seleccionar todas las bandas satelitales de Landsat 8 (debe cerciorarse que estén las bandas 3, 5 y 6).\n\t- Pulsar el icono de la opción “Seleccionar archivo MTL” y escoger el archivo MTL (formato *.txt).\n\nEn caso de no requerir:\n\t- Marcar la opción “Corrección realizada”.\n\t- Pulsar el icono de la opción “Seleccionar imágenes corregidas Landsat 8” y seleccionar todas las bandas satelitales de Landsat 8 (debe cerciorarse que estén las bandas 3, 5 y 6).\n\n3. Pulsar el icono de la opción “Guardar NDWI”, escoger el directorio donde desea guardar y escribir el nombre de la carpeta que contendrá los resultados.\n4. Pulsar el botón “Ejecutar” (es normal que el proceso demore un par de segundos).")
-        
         self.dialogo.exec_()
 
+
     def abrirTIF(self,rutas_bandas):
-        
         archivo, _ = QFileDialog.getOpenFileNames(self.dlg, 'Abrir archivo', '', 'TIF file .TIF (*.TIF)')
         
         if archivo:
             mensaje = self.dlg.cuadroTIF.setText(archivo[0])
             self.dlg.btn_abrirTIF.setText(mensaje)
         for i in archivo:
-            self.rutas_bandas.append(i)
+            if i not in self.rutas_bandas:
+                self.rutas_bandas.append(i)
+
+        if len(self.rutas_bandas) > 0 and self.estado_corr == 'inactivo':
+
+            #filtro de bandas para mostrar anuncio 
+            bandas_necesarias = ["B3", "B5", "B6"]
+            bandas_faltantes = []
+
+            for banda in bandas_necesarias:
+                if not any(banda in ruta for ruta in self.rutas_bandas):
+                    bandas_faltantes.append(banda)
+
+            if bandas_faltantes:
+                mensaje = f"Las siguientes bandas no están presentes: {', '.join(bandas_faltantes)}"
+                QMessageBox.warning(self.dlg, "Aviso", mensaje)
+            
         return rutas_bandas
+    
       
     def abrirMTL(self,archivo_MTL):
-       
         archivo, _ = QFileDialog.getOpenFileNames(self.dlg, 'Abrir archivo','', 'MTL file .txt (*.txt)')
-        
+
         if archivo:
             mensaje = self.dlg.cuadroMTL.setText(archivo[0])
             self.dlg.btn_abrirMTL.setText(mensaje)
-        for i in archivo:
-            self.archivo_MTL.append(i)
+            self.archivo_MTL.append(archivo[0])
+
+            #Abrir el archivo en modo lectura
+            with open(self.archivo_MTL[0], "r") as file:
+            # Leer el contenido del archivo y almacenarlo en una variable
+                content = file.read()
+
+               # Verificar si la palabra "LC08" está presente en el contenido del archivo
+                if "LC08" in content:
+
+                    # Generar la función
+                    pass
+                else:
+                    mensaje = "El MTL ingresado NO corresponde al satélite Landsat 8"
+                    QMessageBox.warning(self.dlg, "Aviso", mensaje)
+                    self.archivo_MTL.clear()
+
         return archivo_MTL
+    
 
     def estado(self):
         if self.dlg.btn_correccion.isChecked()==False:
+
             self.estado_corr = "inactivo"
             self.dlg.cuadroTIF.setEnabled(True)
             self.dlg.btn_abrirTIF.setEnabled(True)
@@ -258,7 +281,7 @@ class IndiceNDWI:
             self.dlg.msj_MTL.setEnabled(True)
             self.dlg.msj_CORR.setEnabled(False)
             
-        if self.dlg.btn_correccion.isChecked()==True:
+        else:
             self.estado_corr = "activo"
             self.dlg.cuadroTIF.setEnabled(False)
             self.dlg.btn_abrirTIF.setEnabled(False)
@@ -270,18 +293,76 @@ class IndiceNDWI:
             self.dlg.msj_MTL.setEnabled(False)
             self.dlg.msj_CORR.setEnabled(True)
 
+
+    def estado_ejecutar(self):
+        if len(self.rutas_bandas) > 0 and self.estado_corr == 'inactivo':
+
+            if len(self.archivo_MTL) > 0 and self.archivo_MTL[0]:
+                #Abrir el archivo en modo lectura
+                with open(self.archivo_MTL[0], "r") as file:
+                # Leer el contenido del archivo y almacenarlo en una variable
+                    content = file.read()
+                    # Verificar si la palabra "LC08" está presente en el contenido del archivo
+                    if "LC08" in content:
+        
+                        if len(self.ruta_guardar) > 0 and self.ruta_guardar[0]:
+                            self.dlg.btn_ejecutar.setEnabled(True)
+                            self.dlg.aviso_ejecutar.setVisible(False)
+                            self.message_bar = self.iface.messageBar()
+                            self.message_bar.pushMessage("ADVERTENCIA:", "El proceso de cálculo y generación de archivos puede demorar varios segundos, por favor esperar sonido y/o mensaje de éxito (IMPORTANTE: NO INTERRUMPA LA EJECUCIÓN)", level=Qgis.Warning, duration=-1)
+
+            elif len(self.archivo_MTL) == 0:
+                #filtro de bandas para mostrar anuncio 
+                bandas_necesarias = ["B3", "B5", "B6"]
+                bandas_faltantes = []
+
+                for banda in bandas_necesarias:
+                    if not any(banda in ruta for ruta in self.rutas_bandas):
+                        bandas_faltantes.append(banda)
+
+                if bandas_faltantes:
+                    mensaje = f"Las siguientes bandas no están presentes: {', '.join(bandas_faltantes)}"
+                    QMessageBox.warning(self.dlg, "Aviso", mensaje)
+
+        if len(self.rutas_bandas_corr) > 0 and self.estado_corr == 'activo':
+            
+            if len(self.ruta_guardar) > 0 and self.ruta_guardar[0]:
+                self.dlg.btn_ejecutar.setEnabled(True)
+                self.dlg.aviso_ejecutar.setVisible(False)  
+                self.message_bar = self.iface.messageBar()
+                self.message_bar.pushMessage("ADVERTENCIA:", "El proceso de cálculo y generación de archivos puede demorar varios segundos, por favor esperar sonido y/o mensaje de éxito (IMPORTANTE: NO INTERRUMPA LA EJECUCIÓN)", level=Qgis.Warning, duration=-1)  
+
+
     def abrirCORR(self,rutas_bandas_corr): 
         archivo, _ = QFileDialog.getOpenFileNames(self.dlg, 'Abrir archivo', '', 'TIF file .TIF (*.TIF)')
+
         if archivo:
             mensaje = self.dlg.cuadroBandasCorregidas.setText(archivo[0])
             self.dlg.btn_abrirCORR.setText(mensaje)
         for i in archivo:
-            self.rutas_bandas_corr.append(i)
-        return rutas_bandas_corr
+            if i not in self.rutas_bandas_corr:
+                self.rutas_bandas_corr.append(i)
 
+        if len(self.rutas_bandas_corr) > 0 and self.estado_corr == 'activo':
+
+            #filtro de bandas para mostrar anuncio 
+            bandas_necesarias = ["B3", "B5", "B6"]
+            bandas_faltantes = []
+
+            for banda in bandas_necesarias:
+                if not any(banda in ruta for ruta in self.rutas_bandas_corr):
+                    bandas_faltantes.append(banda)
+
+            if bandas_faltantes:
+                mensaje = f"Las siguientes bandas no están presentes: {', '.join(bandas_faltantes)}"
+                QMessageBox.warning(self.dlg, "Aviso", mensaje)
+
+        return rutas_bandas_corr
+    
+    
     def guardar(self, ruta_guardar):
-        
         archivo = QFileDialog.getSaveFileName(self.dlg,'Guardar archivo')
+
         if archivo:
             mensaje = self.dlg.cuadroGuardar.setText(archivo[0])
             self.dlg.btn_guardar.setText(mensaje)
@@ -289,9 +370,17 @@ class IndiceNDWI:
         
         return ruta_guardar
 
+
+    def sonido_termino(self):
+        self.sound.play()
+
+
     def ejecutar(self):
+        #creacion de la carpeta general 
         os.mkdir(self.ruta_guardar[0])
+
         if self.estado_corr == "activo":
+
             for i in self.rutas_bandas_corr:
                 if ("B3.TIF" in i):
                     banda_3 = i
@@ -299,20 +388,32 @@ class IndiceNDWI:
                     banda_5 = i
                 if ("B6.TIF" in i):
                     banda_6 = i
+
             self.GUARDAR_NDWI(banda_3,banda_6,banda_5)
+            self.message_bar.clearWidgets()
+            self.message_bar = self.iface.messageBar()
+            self.message_bar.pushMessage("ANUNCIO:", "Se generó exitosamente el cálculo del índice NDWI en formato .TIF a través de los métodos Xu, Gao y McFeeters.", level=Qgis.Success, duration=0)
             self.limpiar()
 
         if self.estado_corr == "inactivo":
+
             ruta_MTL = self.archivo_MTL[0]
             bandas = self.rutas_bandas
+
             self.filtro(ruta_MTL,bandas)
             self.GUARDAR_NDWI(self.ruta_guardar[0] + '/correcciones/correccion_atmosferica_B3.TIF', self.ruta_guardar[0] + '/correcciones/correccion_atmosferica_B6.TIF', self.ruta_guardar[0] + '/correcciones/correccion_atmosferica_B5.TIF')
             rmtree(self.ruta_guardar[0] + '/correcciones')
-            self.limpiar()
+            self.message_bar.clearWidgets()
+            self.message_bar = self.iface.messageBar()
+            self.message_bar.pushMessage("ANUNCIO:", "Se generó exitosamente el cálculo del índice NDWI en formato .TIF a través de los métodos Xu, Gao y McFeeters.", level=Qgis.Success,duration=0)
+            self.limpiar() 
+
 
     def cerrar(self): 
         self.limpiar()
         self.dlg.close()
+        self.dlg.btn_ejecutar.setEnabled(False)
+        
 
     def limpiar(self):
         self.dlg.cuadroTIF.clear()
@@ -324,13 +425,16 @@ class IndiceNDWI:
         self.rutas_bandas_corr.clear()
         self.ruta_guardar.clear()
 
+
     def guardar_raster(self,dataset,datasetPath,cols,rows,projection,geot):
+        
         rasterSet = gdal.GetDriverByName('GTiff').Create(datasetPath, cols ,rows ,1,gdal.GDT_Float32)
         rasterSet.SetProjection(projection)
         rasterSet.SetGeoTransform(geot)
         rasterSet.GetRasterBand(1).WriteArray(dataset)
         rasterSet.GetRasterBand(1).SetNoDataValue(-999)
         rasterSet = None
+
 
     def correccion(self,n,banda,RADIANCE_MULT_BAND,RADIANCE_ADD_BAND,distancia_tierra_sol,cos_elevacion_solar,ESUN):
 
@@ -349,11 +453,10 @@ class IndiceNDWI:
         geot = B.GetGeoTransform()
 
         self.guardar_raster(REFLECTANCIA, self.ruta_guardar[0] + f"/correcciones/correccion_atmosferica_B{n}.TIF",cols,rows,projection,geot)
+
           
     def filtro(self,path,archivo):
-        
         #BANDAS
-
         for i in archivo:
             if ("B3.TIF" in i):
                 banda_3 = i
@@ -363,7 +466,6 @@ class IndiceNDWI:
                 banda_6 = i
 
         #FILTRO DEL MTL 
-
         with open (path, 'r') as file:
             archivo = file.read()
 
@@ -430,6 +532,7 @@ class IndiceNDWI:
 
 
     def NDWI (self, path_1, path_2, nombre_salida,banda_corr_1,banda_corr_2):
+
         dirB1 = path_1 
         dirB2 = path_2
         banda_1 = QgsRasterLayer(dirB1)
@@ -462,7 +565,6 @@ class IndiceNDWI:
         self.iface.addRasterLayer(self.ruta_guardar[0] + '/NDWI_MCFEETERS.TIF', "NDWI_MCFEETERS")
 
   
-
     def run(self):
         """Run method that performs all the real work"""
 
@@ -478,11 +580,34 @@ class IndiceNDWI:
             self.dlg.btn_ejecutar.clicked.connect(self.ejecutar)
             self.dlg.btn_cerrar.clicked.connect(self.cerrar)
             self.dlg.btn_abrirCORR.clicked.connect(self.abrirCORR)
-            self.dlg.btn_correccion.stateChanged.connect(self.estado)
+            self.dlg.btn_correccion.clicked.connect(self.estado)
             self.dlg.cuadroBandasCorregidas.setEnabled(False)
             self.dlg.btn_abrirCORR.setEnabled(False)
             self.dlg.msj_CORR.setEnabled(False)
+            self.dlg.btn_ejecutar.setEnabled(False)
             self.dlg.btn_inst.clicked.connect(self.inst)
+            self.dlg.btn_ejecutar.clicked.connect(self.sonido_termino)
+            self.dlg.btn_guardar.clicked.connect(self.estado_ejecutar)
+            self.dlg.btn_abrirTIF.clicked.connect(self.estado_ejecutar)
+            self.dlg.btn_abrirMTL.clicked.connect(self.estado_ejecutar)
+            self.dlg.btn_abrirCORR.clicked.connect(self.estado_ejecutar)
+
+            self.dlg.btn_abrirTIF.setToolTip("Selecciona las bandas")
+            self.dlg.btn_abrirTIF.setToolTipDuration(3000)
+            self.dlg.btn_abrirMTL.setToolTip("Abrir archivo")
+            self.dlg.btn_abrirMTL.setToolTipDuration(3000)
+            self.dlg.btn_correccion.setToolTip("Corrección atmosférica realizada")
+            self.dlg.btn_correccion.setToolTipDuration(3000)
+            self.dlg.btn_abrirCORR.setToolTip("Selecciona las bandas corregidas")
+            self.dlg.btn_abrirCORR.setToolTipDuration(3000)
+            self.dlg.btn_ejecutar.setToolTip("Ejecutar")
+            self.dlg.btn_ejecutar.setToolTipDuration(3000)
+            self.dlg.btn_guardar.setToolTip("Guardar resultados")
+            self.dlg.btn_guardar.setToolTipDuration(3000)
+            self.dlg.btn_cerrar.setToolTip("Cerrar")
+            self.dlg.btn_cerrar.setToolTipDuration(3000)
+            self.dlg.btn_inst.setToolTip("Leer instrucciones")
+            self.dlg.btn_inst.setToolTipDuration(3000)
 
         # show the dialog
         self.dlg.show()
