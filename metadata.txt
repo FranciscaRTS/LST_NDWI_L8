@@ -21,7 +21,9 @@ repository=https://github.com/FranciscaRTS/LST_NDWI_L8
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
 # changelog=
-
+	1.5.1
+	-Se mejoró la ventana de instrucciones para que fuese responsiva.
+	-Se cambio icono de corrección atmosférica realizada.
 	1.5
 	-Se crearon avisos para alertar a el usuario al ingresar erróneamente los datos de entrada (bandas satelitales y MTL).
 	-Se crearon mensajes de avisos en QGIS para mantener actualizado al usuario sobre el proceso de la ejecución.
