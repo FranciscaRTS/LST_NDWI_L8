@@ -56,31 +56,6 @@
     <string>Corrección atmosférica (Radiancia y reflectancia TOA)</string>
    </property>
   </widget>
-  <widget class="QRadioButton" name="btn_correccion">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>190</y>
-     <width>148</width>
-     <height>27</height>
-    </rect>
-   </property>
-   <property name="minimumSize">
-    <size>
-     <width>0</width>
-     <height>27</height>
-    </size>
-   </property>
-   <property name="toolTip">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enable/Disable calculation of temperature in Celsius from thermal band&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-   </property>
-   <property name="text">
-    <string>Corrección realizada </string>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-  </widget>
   <widget class="QLabel" name="label_75">
    <property name="geometry">
     <rect>
@@ -545,6 +520,19 @@
    </property>
    <property name="text">
     <string>⚠️AVISO: El botón “Ejecutar” se activará solo cuando ingrese los datos solicitados correctamente.</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="btn_correccion">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>190</y>
+     <width>141</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Corrección realizada </string>
    </property>
   </widget>
  </widget>

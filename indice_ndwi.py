@@ -30,10 +30,10 @@ from qgis.PyQt.QtGui import QIcon
 from PyQt5.QtMultimedia import QSound
 from qgis.core import QgsRasterLayer, Qgis
 from qgis.PyQt.QtWidgets import QAction, QLabel
-from PyQt5.QtCore import QSettings, QTranslator, QCoreApplication
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
+from PyQt5.QtCore import QSettings, QTranslator, QCoreApplication, Qt
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.analysis import QgsRasterCalculator, QgsRasterCalculatorEntry
-from PyQt5.QtWidgets import QAction,QFileDialog, QDialog, QLabel, QMessageBox, QMenu, QSizePolicy
+from PyQt5.QtWidgets import QAction,QFileDialog, QDialog, QLabel, QMessageBox, QSizePolicy, QVBoxLayout
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -43,15 +43,19 @@ import os.path
 
 class Instrucciones(QDialog):
     def __init__(self):
-        QDialog.__init__(self)
-        
-        self.setMaximumSize(QtCore.QSize(1250,400))
-        self.setMinimumSize(QtCore.QSize(1250,400))
+        super().__init__()
+
         self.setWindowTitle("Instrucciones")
-        self.etiqueta = QLabel(self)
+        self.setMinimumSize(300, 200)
+
+        layout = QVBoxLayout(self)
+
+        self.etiqueta = QLabel("Contenido de las instrucciones", self)
+        self.etiqueta.setAlignment(Qt.AlignLeft)
+        self.etiqueta.setStyleSheet("border: 1px solid black; padding: 25px; font: 75 9pt 'Calibri'; border-radius: 10px 10px 10px 10px;")
         self.etiqueta.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.etiqueta.move(50,20)
-        self.etiqueta.setStyleSheet("border: 1px solid black; padding: 25px; font: 75 9pt 'Calibri';border-radius: 10px 10px 10px 10px;")
+
+        layout.addWidget(self.etiqueta)
 
 class IndiceNDWI:
     """QGIS Plugin Implementation."""
