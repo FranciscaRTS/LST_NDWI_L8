@@ -7,7 +7,7 @@ name=Moisture and Water Index
 qgisMinimumVersion=3.0
 description=Este complemento calcula el índice NDWI con las imágenes del Landsat 8.
 version=1.5
-author=Francisca Ruiz-Tagle Santander
+author=Francisca Ruiz-Tagle Santander y Keyla Alencar da Silva UTEM UNR CONICET
 email=fa.ruiztaglest@gmail.com
 
 about=Este complemento calcula el índice NDWI con las imágenes del Landsat 8, las cuales pueden ser ingresadas sin la corrección atmosférica (radiancia y reflectancia (TOA)), ya que la aplicación puede corregirlas, de lo contrario solo se realizará el cálculo del índice. Los métodos utilizados para el cálculo son Xu, Gao y McFeeters.
